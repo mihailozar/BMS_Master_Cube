@@ -44,10 +44,7 @@ static void UART_TransmitTask(void *parameters)
 			}
 
 			ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-			if(buffer.idUart==1){
-				flag=0;
-				xTimerStart(timerChecker, portMAX_DELAY);
-			}
+
 
 
 
@@ -174,6 +171,10 @@ void UART_AsyncTransmitString(int id,char const *string)
 			xQueueSendToBack(UART_TransmitQueueHandle, &tmp ,portMAX_DELAY);
 		}
 
+		if(id==1){
+			flag=0;
+			xTimerStart(timerChecker, portMAX_DELAY);
+		}
 		xSemaphoreGive(UART_TransmitMutexHandle);
 	}
 }

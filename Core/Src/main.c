@@ -30,6 +30,7 @@
 #include "userMian.h"
 #include "FreeRTOS.h"
 #include "task.h"
+extern void Can_Init();
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -97,7 +98,8 @@ int main(void)
   MX_UART5_Init();
   MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
-  xTaskCreate(userMain, "UserMainThread", 128, NULL, 10, NULL);
+  Can_Init();
+  xTaskCreate(userMain, "UserMainThread", 64, NULL, 5, NULL);
 
   /* USER CODE END 2 */
 

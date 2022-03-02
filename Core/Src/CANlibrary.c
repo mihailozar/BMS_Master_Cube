@@ -24,9 +24,10 @@ CANMsg *msg;
 
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	CAN_RxHeaderTypeDef pHeader;
-	uint8_t *rxData;
+	uint8_t rxData[8];
 	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &pHeader, rxData);
-	CANMsg msg={ pHeader, rxData};
+//	canSend(pHeader.StdId, rxData);
+	CANMsg msg={ &pHeader, rxData};
 	xQueueSendToBackFromISR(CAN_Rx_Queue,&(msg), portMAX_DELAY );
 
 
@@ -39,37 +40,58 @@ void getCANMessage() {
 
 	uint32_t messageID = msg->pHeader.StdId;
 	uint8_t *rxData = msg->data;
+	canSend(messageID, rxData);
+
 
 }
 
 
 static void can_task(void *parameters){
 	while(1){
-		if(HAL_CAN_GetRxFifoFillLevel(&hcan1, 0)>0){
+		if(uxQueueSpacesAvailable(CAN_Rx_Queue)<10){
 			xSemaphoreTake(CANMutex, portMAX_DELAY);
 			getCANMessage();
 			xSemaphoreGive(CANMutex);
 		}
 	}
 }
-
+void create_CanTask(){
+		CAN_Rx_Queue = xQueueCreate(10, sizeof(struct CANMessage));
+		CANMutex = xSemaphoreCreateMutex();
+		xTaskCreate(can_task, "Can_task", 128, NULL, 30, &canHandler);
+		HAL_CAN_Start(&hcan1);
+}
 
 void Can_Init(){
-	CAN_Rx_Queue = xQueueCreate(10, sizeof(struct CANMessage));
-	CANMutex = xSemaphoreCreateMutex();
-	xTaskCreate(can_task, "Can_task", 128, NULL, 10, &canHandler);
+
+
+	CAN_FilterTypeDef CanFilter;
+	CanFilter.FilterIdHigh = 0x0000;
+	CanFilter.FilterIdLow = 0;
+	CanFilter.FilterMaskIdHigh = 0x0000;
+	CanFilter.FilterMaskIdLow = 0;
+	CanFilter.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+	CanFilter.FilterBank = 0;
+	CanFilter.FilterMode = CAN_FILTERMODE_IDMASK;
+	CanFilter.FilterScale = CAN_FILTERSCALE_32BIT;
+	CanFilter.FilterActivation = CAN_FILTER_ENABLE;
+
+
+	HAL_CAN_ConfigFilter(&hcan1, &CanFilter);
+	HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
+
 }
 
 
-void canSend(uint16_t id, CANMsg* canMsg){
+void canSend(uint16_t id, uint8_t canMsg[]){
 
 	CAN_TxHeaderTypeDef pHeader;
 		pHeader.DLC = 8;
 		pHeader.RTR = CAN_RTR_DATA;
 		pHeader.IDE = CAN_ID_STD;
 		pHeader.StdId = id;
-	HAL_CAN_AddTxMessage(&hcan1,&pHeader , canMsg->data, &TxMailbox);
-	while (HAL_CAN_IsTxMessagePending(&hcan1, TxMailbox));
+	HAL_CAN_AddTxMessage(&hcan1,&pHeader , canMsg, &TxMailbox);
+//	while (HAL_CAN_IsTxMessagePending(&hcan1, TxMailbox));
 }
 
 

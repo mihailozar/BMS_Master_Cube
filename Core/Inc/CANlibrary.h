@@ -66,7 +66,8 @@ const uint16_t Id_Can_FAULTS[10][2] =
 //CANMessage canSendMessage_Voltage[10][2];                  //10 messages for 10 boards
 
 void Can_Init();
-void canSend(uint16_t id,  CANMsg* canMsg);
+void canSend(uint16_t id,  uint8_t* canMsg);
+void create_CanTask();
 
 void pack_data_2B( CANMsg* canMsg, uint16_t data, uint8_t position);
 void pack_data_1B( CANMsg* canMsg, uint16_t data, uint8_t position);

@@ -23,31 +23,32 @@ extern void InitPL455();
 extern void PwmInInit();
 extern void Can_Init();
 extern void canSend(uint16_t id,  CANMsg* canMsg);
+extern  void create_CanTask();
 
 
 
 int userMain(void){
 
-	UART_Init();
-	PwmInInit();
-	Can_Init();
+//	UART_Init();
+//	PwmInInit();
+	create_CanTask();
 //	masterInit();
 //	InitPL455();
 
 
 	while(1){
-		int f=(int)frequency();
-		char fc[4];
-		int d=(int)dutycycle();
-		char dc[4];
-		itoa(f,fc,10);
-		itoa(d,dc,10);
-		UART_AsyncTransmitString(5, "fr");
-		UART_AsyncTransmitString(5, fc);
-		UART_AsyncTransmitString(5, "du");
-		UART_AsyncTransmitString(5, dc);
+//		int f=(int)frequency();
+//		char fc[4];
+//		int d=(int)dutycycle();
+//		char dc[4];
+//		itoa(f,fc,10);
+//		itoa(d,dc,10);
+//		UART_AsyncTransmitString(5, "fr");
+//		UART_AsyncTransmitString(5, fc);
+//		UART_AsyncTransmitString(5, "du");
+//		UART_AsyncTransmitString(5, dc);
 		uint8_t niz[8]={0,1,0,1,0,1,0,1};
-		canSend(0, niz);
+//		canSend(1, niz);
 		vTaskDelay(pdMS_TO_TICKS(500));
 
 	}
