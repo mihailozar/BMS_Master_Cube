@@ -119,7 +119,7 @@ int WriteFrame(BYTE bID, uint16_t wAddr, BYTE *pData, BYTE bLen,
 	*pBuf++ = (wCRC & 0xFF00) >> 8;
 	bPktLen += 2;
 
-	UART_AsyncTransmitString(5,pFrame);
+	UART_AsyncTransmitString(1,pFrame);
 	vTaskDelay(pdMS_TO_TICKS(1));
 
 	return bPktLen;
@@ -306,7 +306,12 @@ void InitPL455() {
 		// read device ID to see if there is a response
 		ReadReg(nDev_ID, DEVICE_ADDR, &wTemp, 1, 0); // 0ms timeout
 //		uartReceive();
-		UART_BlockReceiveString(5);
+
+		//ovde zajebava treba proveriti
+//		UART_BlockReceiveString(5);
+
+
+
 //		ThisThread::sleep_for(50ms);
 	}
 

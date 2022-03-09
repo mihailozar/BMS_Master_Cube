@@ -13,12 +13,13 @@
 extern void UART_Init();
 
 extern void UART_AsyncTransmitCharacter(char character);
-extern void UART_AsyncTransmitString(int id,char const *string);
+extern void UART_AsyncTransmitString(int id,uint8_t const string[]);
 extern void UART_AsyncTransmitDecimal(uint32_t decimal);
 
 extern char UART_BlockReceiveCharacter();
 extern char* UART_BlockReceiveString(int id);
 extern uint32_t UART_BlockReceiveDecimal();
+
 
 typedef struct UartMess{
 	uint8_t string;

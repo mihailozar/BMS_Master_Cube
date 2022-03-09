@@ -97,9 +97,12 @@ int main(void)
   MX_USART1_UART_Init();
   MX_UART5_Init();
   MX_CAN1_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-  Can_Init();
-  xTaskCreate(userMain, "UserMainThread", 64, NULL, 5, NULL);
+
+//  Can_Init();
+
+  xTaskCreate(userMain, "UserMainThread", 64, NULL, 20, NULL);
 
   /* USER CODE END 2 */
 
@@ -178,13 +181,13 @@ void SystemClock_Config(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-
+//////
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM1) {
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
+//////
   /* USER CODE END Callback 1 */
 }
 

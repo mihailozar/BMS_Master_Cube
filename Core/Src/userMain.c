@@ -11,6 +11,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "can.h"
+#include "slaveConfig.h"
+
 
 
 typedef struct CANMessage {
@@ -24,16 +26,20 @@ extern void PwmInInit();
 extern void Can_Init();
 extern void canSend(uint16_t id,  CANMsg* canMsg);
 extern  void create_CanTask();
+extern void shutDownSlavesCommand();
+int flagovi=0;
 
 
 
 int userMain(void){
 
-//	UART_Init();
 //	PwmInInit();
-	create_CanTask();
+//	create_CanTask();
 //	masterInit();
+	UART_Init();
 //	InitPL455();
+//	vTaskDelay(pdMS_TO_TICKS(1000));
+//	shutDownSlavesCommand();
 
 
 	while(1){
@@ -43,11 +49,21 @@ int userMain(void){
 //		char dc[4];
 //		itoa(f,fc,10);
 //		itoa(d,dc,10);
-//		UART_AsyncTransmitString(5, "fr");
-//		UART_AsyncTransmitString(5, fc);
-//		UART_AsyncTransmitString(5, "du");
-//		UART_AsyncTransmitString(5, dc);
-		uint8_t niz[8]={0,1,0,1,0,1,0,1};
+		char* tmp;
+//		tmp=UART_BlockReceiveString(1);
+//		UART_BlockReceiveString(5);
+//		UART_AsyncTransmitString(5, "slave\n");
+		if(flagovi==1){
+			UART_AsyncTransmitString(5, "desio se prijem\n");
+		}
+		flagovi=0;
+		vTaskDelay(pdMS_TO_TICKS(500));
+		UART_AsyncTransmitString(5, "posle ifa\n");
+//		vTaskDelay(pdMS_TO_TICKS(500));
+//		UART_AsyncTransmitString(5, "master\n");
+//		UART_AsyncTransmitString(5, "du\n");
+//		UART_AsyncTransmitString(5, "dc\n");
+//		uint8_t niz[8]={0,1,0,1,0,1,0,1};
 //		canSend(1, niz);
 		vTaskDelay(pdMS_TO_TICKS(500));
 
