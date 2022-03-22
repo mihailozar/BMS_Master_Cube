@@ -96,21 +96,21 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	BaseType_t woken = pdFALSE;
 	if (huart->Instance == huart5.Instance) {
 		flagovi=1;
-//		pom=UART5_ReceiveTaskHandle;
-		xQueueSendToBackFromISR(UART5_ReceiveQueueHandle, &uartData5, &woken);
-		HAL_UART_Receive_IT(&huart5, &uartData5, sizeof(uint8_t));
+		pom=UART5_ReceiveTaskHandle;
+//		xQueueSendToBackFromISR(UART5_ReceiveQueueHandle, &uartData5, &woken);
+//		HAL_UART_Receive_IT(&huart5, &uartData5, sizeof(uint8_t));
 
 	} else if (huart->Instance == huart1.Instance) {
 //		flag=1;
-//		pom=UART1_ReceiveTaskHandle;
-		xQueueSendToBackFromISR(UART1_ReceiveQueueHandle, &uartData1, &woken);
-		HAL_UART_Receive_IT(&huart1, &uartData1, sizeof(uint8_t));
+		pom=UART1_ReceiveTaskHandle;
+//		xQueueSendToBackFromISR(UART1_ReceiveQueueHandle, &uartData1, &woken);
+//		HAL_UART_Receive_IT(&huart1, &uartData1, sizeof(uint8_t));
 
 	}
 
 
-//	vTaskNotifyGiveFromISR(pom, &woken);
-//	portYIELD_FROM_ISR(woken);
+	vTaskNotifyGiveFromISR(pom, &woken);
+	portYIELD_FROM_ISR(woken);
 }
 
 // GENERAL
@@ -126,11 +126,11 @@ void UART_Init() {
 	UART5_ReceiveQueueHandle = xQueueCreate(128, sizeof(uint8_t));
 	UART1_ReceiveQueueHandle = xQueueCreate(32, sizeof(uint8_t));
 	UART_ReceiveMutexHandle = xSemaphoreCreateMutex();
-//	xTaskCreate(UART_ReceiveTask, "receiveTask1", 64, (void*)1, 20, &UART1_ReceiveTaskHandle);
-//	xTaskCreate(UART_ReceiveTask, "receiveTask5", 64, (void*)5, 20, &UART5_ReceiveTaskHandle);
+	xTaskCreate(UART_ReceiveTask, "receiveTask1", 64, (void*)1, 20, &UART1_ReceiveTaskHandle);
+	xTaskCreate(UART_ReceiveTask, "receiveTask5", 64, (void*)5, 20, &UART5_ReceiveTaskHandle);
 
-	HAL_UART_Receive_IT(&huart5, &uartData5, sizeof(uint8_t));
-	HAL_UART_Receive_IT(&huart1, &uartData1, sizeof(uint8_t));
+//	HAL_UART_Receive_IT(&huart5, &uartData5, sizeof(uint8_t));
+//	HAL_UART_Receive_IT(&huart1, &uartData1, sizeof(uint8_t));
 
 	timerChecker=xTimerCreate("timeChecker", pdMS_TO_TICKS(timeCheckerUart), pdFALSE, NULL, vCallbackFunction);
 
