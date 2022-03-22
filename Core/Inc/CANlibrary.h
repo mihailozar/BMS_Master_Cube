@@ -14,7 +14,7 @@
 #include "can.h"
 
 typedef struct CANMessage {
-	CAN_RxHeaderTypeDef pHeader;
+	uint8_t headId;
 	uint8_t data[8];
 } CANMsg;
 //More info on Google Dirve, table: CAN projektovanje

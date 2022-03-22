@@ -31,6 +31,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 extern void Can_Init();
+extern void userMainInit();
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -100,9 +101,10 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
-//  Can_Init();
 
-  xTaskCreate(userMain, "UserMainThread", 64, NULL, 20, NULL);
+
+  userMainInit();
+
 
   /* USER CODE END 2 */
 

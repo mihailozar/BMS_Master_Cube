@@ -308,8 +308,7 @@ void InitPL455() {
 //		uartReceive();
 
 		//ovde zajebava treba proveriti
-//		UART_BlockReceiveString(5);
-
+		UART_BlockReceiveString(1);
 
 
 //		ThisThread::sleep_for(50ms);

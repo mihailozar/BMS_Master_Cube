@@ -34,32 +34,38 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 }
 
 
-void getCANMessage() {
-	//Provera ima li primljene poruke
-	xQueueReceive(CAN_Rx_Queue, &(msg), 0);
-
-	uint32_t messageID = msg->pHeader.StdId;
-	uint8_t *rxData = msg->data;
-	canSend(messageID, rxData);
-
-
-}
+//void getCANMessage() {
+//	//Provera ima li primljene poruke
+//	xQueueReceive(CAN_Rx_Queue, &(msg), 0);
+//
+//	uint32_t messageID = msg->pHeader.StdId;
+//	uint8_t *rxData = msg->data;
+//	canSend(messageID, rxData);
+//
+//
+//}
 
 
 static void can_task(void *parameters){
 	while(1){
-		if(uxQueueSpacesAvailable(CAN_Rx_Queue)<10){
-			xSemaphoreTake(CANMutex, portMAX_DELAY);
-			getCANMessage();
-			xSemaphoreGive(CANMutex);
-		}
+//		int i=uxQueueSpacesAvailable(CAN_Rx_Queue);
+//		if(uxQueueSpacesAvailable(CAN_Rx_Queue)<10){
+//			xQueueReceive(CAN_Rx_Queue, &(msg), portMAX_DELAY);
+//			uint32_t messageID = msg->headId;
+//			uint8_t *rxData = msg->data;
+//			canSend(messageID, rxData);
+//		UART_AsyncTransmitString(5, string);
+		vTaskDelay(pdMS_TO_TICKS(500));
+//		}
 	}
 }
 void create_CanTask(){
-		CAN_Rx_Queue = xQueueCreate(10, sizeof(struct CANMessage));
-		CANMutex = xSemaphoreCreateMutex();
-		xTaskCreate(can_task, "Can_task", 128, NULL, 30, &canHandler);
-		HAL_CAN_Start(&hcan1);
+
+//		xTaskCreate(can_task, "Can_task", 32, NULL, 10, &canHandler);
+//		CAN_Rx_Queue = xQueueCreate(32, sizeof(struct CANMsg *));
+//		CANMutex = xSemaphoreCreateMutex();
+
+
 }
 
 void Can_Init(){
@@ -79,6 +85,7 @@ void Can_Init(){
 
 	HAL_CAN_ConfigFilter(&hcan1, &CanFilter);
 	HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
+	HAL_CAN_Start(&hcan1);
 
 }
 

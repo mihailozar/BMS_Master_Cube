@@ -17,43 +17,43 @@
 #include "usart.h"
 #include "slaveConfig.h"
 
-
 static TaskHandle_t UART_TransmitTaskHandle;
 static QueueHandle_t UART_TransmitQueueHandle;
-
 
 static SemaphoreHandle_t UART_TransmitMutexHandle;
 
 extern TIM_HandleTypeDef htim4;
-static volatile uint8_t flag=0;
-static uint8_t sin=0;
+static volatile uint8_t flag = 0;
+static uint8_t sin = 0;
 
-//static TimerHandle_t timerChecker;
-//void vCallbackFunction ( TimerHandle_t xTimer );
+uint8_t uartData5;
+uint8_t uartData1;
+uint8_t procitano=0;
+
+static TimerHandle_t timerChecker;
+void vCallbackFunction ( TimerHandle_t xTimer );
 //
-static void UART_TransmitTask(void *parameters)
-{
+static void UART_TransmitTask(void *parameters) {
 
 	uartMsg buffer;
-	while (1)
-	{
-			xQueueReceive(UART_TransmitQueueHandle, &buffer, portMAX_DELAY);
-			if(buffer.idUart==1){
-				HAL_UART_Transmit_IT(&huart1, &buffer.string, sizeof(uint8_t));
-			}else{
-				HAL_UART_Transmit_IT(&huart5, &buffer.string, sizeof(uint8_t));
-			}
+	while (1) {
+		xQueueReceive(UART_TransmitQueueHandle, &buffer, portMAX_DELAY);
+		if (buffer.idUart == 1) {
+			HAL_UART_Transmit_IT(&huart1, &buffer.string, sizeof(uint8_t));
+		} else {
+			HAL_UART_Transmit_IT(&huart5, &buffer.string, sizeof(uint8_t));
+		}
 
-			ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+		ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
 	}
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 
-	if(huart->Instance==huart1.Instance || huart->Instance==huart5.Instance){
-		sin=1;
+	if (huart->Instance == huart1.Instance
+			|| huart->Instance == huart5.Instance) {
+		sin = 1;
 		BaseType_t woken = pdFALSE;
 		vTaskNotifyGiveFromISR(UART_TransmitTaskHandle, &woken);
 		portYIELD_FROM_ISR(woken);
@@ -71,23 +71,16 @@ static QueueHandle_t UART5_ReceiveQueueHandle;
 static QueueHandle_t UART1_ReceiveQueueHandle;
 static SemaphoreHandle_t UART_ReceiveMutexHandle;
 
-
-
-
-
-
-static void UART_ReceiveTask(void *parameters)
-{
-	int currUart=(int)parameters;
+static void UART_ReceiveTask(void *parameters) {
+	int currUart = (int) parameters;
 	uint8_t buffer;
-	while (1)
-	{
-		if(currUart==5){
+	while (1) {
+		if (currUart == 5) {
 			HAL_UART_Receive_IT(&huart5, &buffer, sizeof(uint8_t));
 			ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 			xQueueSendToBack(UART5_ReceiveQueueHandle, &buffer, portMAX_DELAY);
 
-		}else if(currUart==1){
+		} else if (currUart == 1) {
 			HAL_UART_Receive_IT(&huart1, &buffer, sizeof(uint8_t));
 			ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 			xQueueSendToBack(UART1_ReceiveQueueHandle, &buffer, portMAX_DELAY);
@@ -96,44 +89,62 @@ static void UART_ReceiveTask(void *parameters)
 	}
 }
 
-
-
 extern int flagovi;
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-	if (huart->Instance == huart5.Instance)
-	{
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	TaskHandle_t pom;
+	BaseType_t woken = pdFALSE;
+	if (huart->Instance == huart5.Instance) {
 		flagovi=1;
-		BaseType_t woken = pdFALSE;
-		vTaskNotifyGiveFromISR(UART5_ReceiveTaskHandle, &woken);
-		portYIELD_FROM_ISR(woken);
-	}else if(huart->Instance== huart1.Instance){
-		flag=1;
-		BaseType_t woken = pdFALSE;
-		vTaskNotifyGiveFromISR(UART1_ReceiveTaskHandle, &woken);
-		portYIELD_FROM_ISR(woken);
+//		pom=UART5_ReceiveTaskHandle;
+		xQueueSendToBackFromISR(UART5_ReceiveQueueHandle, &uartData5, &woken);
+		HAL_UART_Receive_IT(&huart5, &uartData5, sizeof(uint8_t));
+
+	} else if (huart->Instance == huart1.Instance) {
+//		flag=1;
+//		pom=UART1_ReceiveTaskHandle;
+		xQueueSendToBackFromISR(UART1_ReceiveQueueHandle, &uartData1, &woken);
+		HAL_UART_Receive_IT(&huart1, &uartData1, sizeof(uint8_t));
+
 	}
+
+
+//	vTaskNotifyGiveFromISR(pom, &woken);
+//	portYIELD_FROM_ISR(woken);
 }
 
 // GENERAL
 // -----------------------------------------------------------------------------
 
-void UART_Init()
-{	xTaskCreate(UART_TransmitTask, "receiveTask", 64, NULL, 17, &UART_TransmitTaskHandle);
-	UART_TransmitQueueHandle = xQueueCreate(128, sizeof(uartMsg));
+void UART_Init() {
+
+	UART_TransmitQueueHandle = xQueueCreate(32, sizeof(uartMsg));
 	UART_TransmitMutexHandle = xSemaphoreCreateMutex();
+	xTaskCreate(UART_TransmitTask, "transmitTask", 64, NULL, 20,
+			&UART_TransmitTaskHandle);
 
-	xTaskCreate(UART_ReceiveTask, "receiveTask", 64, 1, 20, &UART1_ReceiveTaskHandle);
-	xTaskCreate(UART_ReceiveTask, "receiveTask", 64, 5, 18, &UART5_ReceiveTaskHandle);
-	UART5_ReceiveQueueHandle = xQueueCreate(64, sizeof(uint8_t));
-	UART1_ReceiveQueueHandle = xQueueCreate(64, sizeof(uint8_t));
+	UART5_ReceiveQueueHandle = xQueueCreate(32, sizeof(uint8_t));
+	UART1_ReceiveQueueHandle = xQueueCreate(32, sizeof(uint8_t));
 	UART_ReceiveMutexHandle = xSemaphoreCreateMutex();
+//	xTaskCreate(UART_ReceiveTask, "receiveTask1", 64, (void*)1, 20, &UART1_ReceiveTaskHandle);
+//	xTaskCreate(UART_ReceiveTask, "receiveTask5", 64, (void*)5, 20, &UART5_ReceiveTaskHandle);
 
-//	timerChecker=xTimerCreate("timeChecker", pdMS_TO_TICKS(timeCheckerUart), pdFALSE, NULL, vCallbackFunction);
+	HAL_UART_Receive_IT(&huart5, &uartData5, sizeof(uint8_t));
+	HAL_UART_Receive_IT(&huart1, &uartData1, sizeof(uint8_t));
+
+	timerChecker=xTimerCreate("timeChecker", pdMS_TO_TICKS(timeCheckerUart), pdFALSE, NULL, vCallbackFunction);
 
 }
 
+
+void vCallbackFunction(TimerHandle_t xTimer){
+	if(procitano==0){
+		uint8_t poruka='\t';
+		BaseType_t woken = pdFALSE;
+		xQueueSendToBackFromISR(UART5_ReceiveQueueHandle, &poruka, &woken);
+
+	}
+}
 // TRANSMIT UTIL
 // -----------------------------------------------------------------------------
 
@@ -154,116 +165,77 @@ void UART_Init()
 //	}
 //}
 
-//void UART_AsyncTransmitCharacter(char character)
-//{
-//	xSemaphoreTake(UART_TransmitMutexHandle, portMAX_DELAY);
-//
-//	xQueueSendToBack(UART_TransmitQueueHandle, &character, portMAX_DELAY);
-//
-//	xSemaphoreGive(UART_TransmitMutexHandle );
-//}
+void UART_AsyncTransmitString(int id, uint8_t const string[]) {
+	if (string != NULL) {
+		xSemaphoreTake(UART_TransmitMutexHandle, portMAX_DELAY);
 
-
-
-void UART_AsyncTransmitString(int id,uint8_t const string[])
-{
-	if (string != NULL)
-		{
-			xSemaphoreTake(UART_TransmitMutexHandle, portMAX_DELAY);
-
-			for (uint32_t i = 0; i < strlen(string); i++)
-			{
-				uartMsg tmp={string[i],id};
-				xQueueSendToBack(UART_TransmitQueueHandle, &tmp, portMAX_DELAY);
-			}
-
-			xSemaphoreGive(UART_TransmitMutexHandle);
+		for (uint32_t i = 0; i < strlen(string); i++) {
+			uartMsg tmp = { string[i], id };
+			xQueueSendToBack(UART_TransmitQueueHandle, &tmp, portMAX_DELAY);
 		}
-}
 
-//void UART_AsyncTransmitDecimal(uint32_t decimal)
-//{
-//	xSemaphoreTake(UART_TransmitMutexHandle, portMAX_DELAY);
-//	char digits[32];
-//	uint32_t index = 32;
-//	while (index >= 0 && decimal != 0)
-//	{
-//		digits[--index] = '0' + decimal % 10;
-//		decimal /= 10;
-//	}
-//
-//	for (uint32_t i = index; i < 32; i++)
-//	{
-//		xQueueSendToBack(UART_TransmitQueueHandle, digits + i, portMAX_DELAY);
-//	}
-//
-//	xSemaphoreGive(UART_TransmitMutexHandle);
-//}
+		xSemaphoreGive(UART_TransmitMutexHandle);
+	}
+}
 
 // RECEIVE UTIL
 // -----------------------------------------------------------------------------
 
-//char UART_BlockReceiveCharacter()
-//{
-//	xSemaphoreTake(UART_ReceiveMutexHandle, portMAX_DELAY);
-//
-//	char character;
-//	xQueueReceive(UART5_ReceiveQueueHandle, &character, portMAX_DELAY);
-//
-//	xSemaphoreGive(UART_ReceiveMutexHandle);
-//
-//	return character;
-//}
+char UART_BlockReceiveCharacter(int id) {
+	xSemaphoreTake(UART_ReceiveMutexHandle, portMAX_DELAY);
 
-char* UART_BlockReceiveString(int id)
-{
+	char character;
+	if (id == 5) {
+
+		xQueueReceive(UART5_ReceiveQueueHandle, &character, portMAX_DELAY);
+	} else {
+		xQueueReceive(UART1_ReceiveQueueHandle, &character, portMAX_DELAY);
+	}
+
+	xSemaphoreGive(UART_ReceiveMutexHandle);
+
+	return character;
+}
+
+char* UART_BlockReceiveString(int id) {
 	xSemaphoreTake(UART_ReceiveMutexHandle, portMAX_DELAY);
 
 	char *string = pvPortMalloc(64);
 
-	if (string != NULL)
-	{
+	if (string != NULL) {
 		uint32_t index = 0;
 
 		char character = '\0';
-		while (character != '\r' && index < 64)
-		{
-			if(id==5){
-				xQueueReceive(UART5_ReceiveQueueHandle, &character, portMAX_DELAY);
-			}else {
-				xQueueReceive(UART1_ReceiveQueueHandle, &character, portMAX_DELAY);
+		procitano=0;
+		xTimerStart(timerChecker,portMAX_DELAY);
+		while (character != '\n' && character!='\t'&& index < 64) {
+			if (id == 5) {
+				xTimerStart(timerChecker,portMAX_DELAY);
+				xQueueReceive(UART5_ReceiveQueueHandle, &character,
+						portMAX_DELAY);
+				procitano=1;
+			} else {
+				xTimerStart(timerChecker,portMAX_DELAY);
+				xQueueReceive(UART1_ReceiveQueueHandle, &character,
+						portMAX_DELAY);
+				procitano=1;
 			}
 
 			string[index++] = character;
 		}
 
+		if(character=='\t'){
+			string[index++] = character;
+		}
 		string[--index] = '\0';
 	}
 
 	xSemaphoreGive(UART_ReceiveMutexHandle);
-
-//	UART_AsyncTransmitString(5, string);
-
+resetQueue();
 	return string;
 }
 
-//uint32_t UART_BlockReceiveDecimal()
-//{
-//	xSemaphoreTake(UART_ReceiveMutexHandle, portMAX_DELAY);
-//
-//	uint32_t decimal = 0;
-//
-//	char character = '\0';
-//	while (character != '\r')
-//	{
-//		xQueueReceive(UART_ReceiveQueueHandle, &character, portMAX_DELAY);
-//		if (character >= '0' && character <= '9')
-//		{
-//			decimal = decimal * 10 + (character - '0');
-//		}
-//	}
-//
-//	xSemaphoreGive(UART_ReceiveMutexHandle);
-//
-//	return decimal;
-//}
+void resetQueue() {
+	xQueueReset(UART5_ReceiveQueueHandle);
+}
+
