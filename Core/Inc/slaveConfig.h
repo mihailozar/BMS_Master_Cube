@@ -25,7 +25,7 @@
 #define TEMP_UP_LIMIT           60      //Celzius
 #define TEMP_HIGH_LIMIT         120     //Celzius
 
-#define timeCheckerUart 5000
+#define timeCheckerUart 2000
 
 
 #endif /* INC_SLAVECONFIG_H_ */

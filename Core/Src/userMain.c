@@ -28,6 +28,7 @@ extern void canSend(uint16_t id,  CANMsg* canMsg);
 extern  void create_CanTask();
 extern void shutDownSlavesCommand();
 extern void resetQueue();
+extern void dealokacijaMemorije(char* string);
 int flagovi=0;
 TaskHandle_t mainTask;
 
@@ -66,6 +67,7 @@ char* posle="posle ifa\n";
 			char* tmp;
 			tmp=UART_BlockReceiveString(5);
 			UART_AsyncTransmitString(5, tmp);
+			dealokacijaMemorije(tmp);
 			UART_AsyncTransmitString(5, desavanje);
 //			flagovi=0;
 //

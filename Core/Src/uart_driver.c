@@ -118,12 +118,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
 void UART_Init() {
 
-	UART_TransmitQueueHandle = xQueueCreate(32, sizeof(uartMsg));
+	UART_TransmitQueueHandle = xQueueCreate(128, sizeof(uartMsg));
 	UART_TransmitMutexHandle = xSemaphoreCreateMutex();
 	xTaskCreate(UART_TransmitTask, "transmitTask", 64, NULL, 20,
 			&UART_TransmitTaskHandle);
 
-	UART5_ReceiveQueueHandle = xQueueCreate(32, sizeof(uint8_t));
+	UART5_ReceiveQueueHandle = xQueueCreate(128, sizeof(uint8_t));
 	UART1_ReceiveQueueHandle = xQueueCreate(32, sizeof(uint8_t));
 	UART_ReceiveMutexHandle = xSemaphoreCreateMutex();
 //	xTaskCreate(UART_ReceiveTask, "receiveTask1", 64, (void*)1, 20, &UART1_ReceiveTaskHandle);
@@ -231,11 +231,14 @@ char* UART_BlockReceiveString(int id) {
 	}
 
 	xSemaphoreGive(UART_ReceiveMutexHandle);
-resetQueue();
+
 	return string;
 }
 
 void resetQueue() {
 	xQueueReset(UART5_ReceiveQueueHandle);
+}
+void dealokacijaMemorije(char *string){
+	vPortFree(string);
 }
 
