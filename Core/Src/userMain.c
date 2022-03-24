@@ -32,6 +32,9 @@ extern void dealokacijaMemorije(char* string);
 int flagovi=0;
 TaskHandle_t mainTask;
 
+int prechargeFlag = 0;
+int ecuSHDReqFlag = 0;
+
 void userMainInit(){
 
 	Can_Init();
@@ -77,6 +80,7 @@ char* posle="posle ifa\n";
 		UART_AsyncTransmitString(5, posle);
 //		}
 
+
 //		vTaskDelay(pdMS_TO_TICKS(500));
 //		UART_AsyncTransmitString(5, "master\n");
 //		UART_AsyncTransmitString(5, "du\n");
@@ -84,6 +88,10 @@ char* posle="posle ifa\n";
 //		uint8_t niz[8]={0,1,0,1,0,1,0,1};
 //		canSend(1, niz);
 		vTaskDelay(pdMS_TO_TICKS(1000));
+		uint8_t rxData[8] = {0};
+
+		canSend(0x10, rxData);
+
 
 	}
 

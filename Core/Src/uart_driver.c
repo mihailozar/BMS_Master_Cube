@@ -28,7 +28,7 @@ static uint8_t sin = 0;
 
 uint8_t uartData5;
 uint8_t uartData1;
-uint8_t procitano=0;
+volatile uint8_t procitano=0;
 
 static TimerHandle_t timerChecker;
 void vCallbackFunction ( TimerHandle_t xTimer );
@@ -78,6 +78,7 @@ static void UART_ReceiveTask(void *parameters) {
 		if (currUart == 5) {
 			HAL_UART_Receive_IT(&huart5, &buffer, sizeof(uint8_t));
 			ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+			while(procitano==0);
 			xQueueSendToBack(UART5_ReceiveQueueHandle, &buffer, portMAX_DELAY);
 
 		} else if (currUart == 1) {
@@ -94,23 +95,25 @@ extern int flagovi;
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	TaskHandle_t pom;
 	BaseType_t woken = pdFALSE;
+	procitano=1;
 	if (huart->Instance == huart5.Instance) {
 		flagovi=1;
-		pom=UART5_ReceiveTaskHandle;
-//		xQueueSendToBackFromISR(UART5_ReceiveQueueHandle, &uartData5, &woken);
-//		HAL_UART_Receive_IT(&huart5, &uartData5, sizeof(uint8_t));
+//		pom=UART5_ReceiveTaskHandle;
+
+		xQueueSendToBackFromISR(UART5_ReceiveQueueHandle, &uartData5, &woken);
+		HAL_UART_Receive_IT(&huart5, &uartData5, sizeof(uint8_t));
 
 	} else if (huart->Instance == huart1.Instance) {
 //		flag=1;
-		pom=UART1_ReceiveTaskHandle;
-//		xQueueSendToBackFromISR(UART1_ReceiveQueueHandle, &uartData1, &woken);
-//		HAL_UART_Receive_IT(&huart1, &uartData1, sizeof(uint8_t));
+//		pom=UART1_ReceiveTaskHandle;
+		xQueueSendToBackFromISR(UART1_ReceiveQueueHandle, &uartData1, &woken);
+		HAL_UART_Receive_IT(&huart1, &uartData1, sizeof(uint8_t));
 
 	}
 
 
-	vTaskNotifyGiveFromISR(pom, &woken);
-	portYIELD_FROM_ISR(woken);
+//	vTaskNotifyGiveFromISR(pom, &woken);
+//	portYIELD_FROM_ISR(woken);
 }
 
 // GENERAL
@@ -126,11 +129,12 @@ void UART_Init() {
 	UART5_ReceiveQueueHandle = xQueueCreate(128, sizeof(uint8_t));
 	UART1_ReceiveQueueHandle = xQueueCreate(32, sizeof(uint8_t));
 	UART_ReceiveMutexHandle = xSemaphoreCreateMutex();
-	xTaskCreate(UART_ReceiveTask, "receiveTask1", 64, (void*)1, 20, &UART1_ReceiveTaskHandle);
-	xTaskCreate(UART_ReceiveTask, "receiveTask5", 64, (void*)5, 20, &UART5_ReceiveTaskHandle);
 
-//	HAL_UART_Receive_IT(&huart5, &uartData5, sizeof(uint8_t));
-//	HAL_UART_Receive_IT(&huart1, &uartData1, sizeof(uint8_t));
+//	xTaskCreate(UART_ReceiveTask, "receiveTask1", 64, (void*)1, 20, &UART1_ReceiveTaskHandle);
+//	xTaskCreate(UART_ReceiveTask, "receiveTask5", 64, (void*)5, 20, &UART5_ReceiveTaskHandle);
+
+	HAL_UART_Receive_IT(&huart5, &uartData5, sizeof(uint8_t));
+	HAL_UART_Receive_IT(&huart1, &uartData1, sizeof(uint8_t));
 
 	timerChecker=xTimerCreate("timeChecker", pdMS_TO_TICKS(timeCheckerUart), pdFALSE, NULL, vCallbackFunction);
 
@@ -139,9 +143,11 @@ void UART_Init() {
 
 void vCallbackFunction(TimerHandle_t xTimer){
 	if(procitano==0){
+		procitano=1;
 		uint8_t poruka='\t';
 		BaseType_t woken = pdFALSE;
-		xQueueSendToBackFromISR(UART5_ReceiveQueueHandle, &poruka, &woken);
+		xQueueSendToBack(UART5_ReceiveQueueHandle,&poruka, portMAX_DELAY);
+//		xQueueSendToBackFromISR(UART5_ReceiveQueueHandle, &poruka, &woken);
 
 	}
 }
@@ -207,15 +213,16 @@ char* UART_BlockReceiveString(int id) {
 
 		char character = '\0';
 		procitano=0;
+//		xTimerReset(timerChecker, portMAX_DELAY);
 		xTimerStart(timerChecker,portMAX_DELAY);
 		while (character != '\n' && character!='\t'&& index < 64) {
 			if (id == 5) {
-				xTimerStart(timerChecker,portMAX_DELAY);
+
 				xQueueReceive(UART5_ReceiveQueueHandle, &character,
 						portMAX_DELAY);
-				procitano=1;
+
 			} else {
-				xTimerStart(timerChecker,portMAX_DELAY);
+
 				xQueueReceive(UART1_ReceiveQueueHandle, &character,
 						portMAX_DELAY);
 				procitano=1;
@@ -229,6 +236,7 @@ char* UART_BlockReceiveString(int id) {
 		}
 		string[--index] = '\0';
 	}
+	procitano=0;
 
 	xSemaphoreGive(UART_ReceiveMutexHandle);
 

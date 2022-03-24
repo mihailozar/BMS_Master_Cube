@@ -20,7 +20,8 @@ SemaphoreHandle_t CANMutex;
 uint32_t TxMailbox;
 CANMsg *msg;
 
-
+extern int prechargeFlag;
+extern int ecuSHDReqFlag;
 
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	CAN_RxHeaderTypeDef pHeader;
@@ -28,8 +29,29 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &pHeader, rxData);
 //	canSend(pHeader.StdId, rxData);
 	CANMsg msg={ &pHeader, rxData};
-	xQueueSendToBackFromISR(CAN_Rx_Queue,&(msg), portMAX_DELAY );
+//	xQueueSendToBackFromISR(CAN_Rx_Queue,&(msg), portMAX_DELAY );
+	 //From ECATU
+	        if (pHeader.StdId == 0x097)
+	        {
+	            if (rxData[0] == 1)
+	            {
+	                //start PrechargeProcess
+	                if (prechargeFlag != 1)
+	                    prechargeFlag = 1;
+	            }
+	        }
+	        //From ECATU
+	        if (pHeader.StdId == 0x300)
+	        {
+	            if (rxData[2] & 0x40)
+	            {
+	                //open SHUT DOWN Circuit
+	                if (ecuSHDReqFlag != 1)
+	                    ecuSHDReqFlag = 1;
+	            }
+	        }
 
+//	        canSend(pHeader.StdId, rxData);
 
 }
 
@@ -46,8 +68,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 //}
 
 
-static void can_task(void *parameters){
-	while(1){
+//static void can_task(void *parameters){
+//	while(1){
 //		int i=uxQueueSpacesAvailable(CAN_Rx_Queue);
 //		if(uxQueueSpacesAvailable(CAN_Rx_Queue)<10){
 //			xQueueReceive(CAN_Rx_Queue, &(msg), portMAX_DELAY);
@@ -55,18 +77,18 @@ static void can_task(void *parameters){
 //			uint8_t *rxData = msg->data;
 //			canSend(messageID, rxData);
 //		UART_AsyncTransmitString(5, string);
-		vTaskDelay(pdMS_TO_TICKS(500));
+//		vTaskDelay(pdMS_TO_TICKS(500));
 //		}
-	}
-}
-void create_CanTask(){
-
+//	}
+//}
+//void create_CanTask(){
+//
 //		xTaskCreate(can_task, "Can_task", 32, NULL, 10, &canHandler);
 //		CAN_Rx_Queue = xQueueCreate(32, sizeof(struct CANMsg *));
 //		CANMutex = xSemaphoreCreateMutex();
-
-
-}
+//
+//
+//}
 
 void Can_Init(){
 
@@ -90,7 +112,7 @@ void Can_Init(){
 }
 
 
-void canSend(uint16_t id, uint8_t canMsg[]){
+void canSend(uint16_t id, uint8_t* canMsg){
 
 	CAN_TxHeaderTypeDef pHeader;
 		pHeader.DLC = 8;
@@ -98,7 +120,7 @@ void canSend(uint16_t id, uint8_t canMsg[]){
 		pHeader.IDE = CAN_ID_STD;
 		pHeader.StdId = id;
 	HAL_CAN_AddTxMessage(&hcan1,&pHeader , canMsg, &TxMailbox);
-//	while (HAL_CAN_IsTxMessagePending(&hcan1, TxMailbox));
+	while (HAL_CAN_IsTxMessagePending(&hcan1, TxMailbox));
 }
 
 

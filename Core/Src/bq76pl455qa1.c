@@ -308,7 +308,8 @@ void InitPL455() {
 //		uartReceive();
 
 		//ovde zajebava treba proveriti
-		UART_BlockReceiveString(1);
+		dealokacijaMemorije(UART_BlockReceiveString(5));
+
 
 
 //		ThisThread::sleep_for(50ms);
