@@ -11,8 +11,6 @@
 #include "slaveConfig.h"
 #include "uart_driver.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
 
 /*Fatal error cases:
 
@@ -42,10 +40,10 @@ void WakePL445() {
 
 	HAL_GPIO_WritePin(GPIOC, bmsWakeUp_Pin, 1);
 //    ThisThread::sleep_for(50ms);
-	vTaskDelay(pdMS_TO_TICKS(50));
+	HAL_Delay(50);
 	HAL_GPIO_WritePin(GPIOC, bmsWakeUp_Pin, 0);
 //    ThisThread::sleep_for(10ms);
-	vTaskDelay(pdMS_TO_TICKS(50));
+	HAL_Delay(50);
 }
 
 
@@ -120,7 +118,7 @@ int WriteFrame(BYTE bID, uint16_t wAddr, BYTE *pData, BYTE bLen,
 	bPktLen += 2;
 
 	UART_AsyncTransmitString(1,pFrame);
-	vTaskDelay(pdMS_TO_TICKS(1));
+	HAL_Delay(1);
 
 	return bPktLen;
 }
@@ -273,10 +271,10 @@ void InitPL455() {
 	for (int nDev_ID = 0; nDev_ID < TOTALBOARDS >> 1; nDev_ID++) {
 		WriteReg(nDev_ID, DEVICE_CONTROL, 0x40, 1, FRMWRT_ALL_NR); // send out broadcast pwrdown command
 //		ThisThread::sleep_for(20ms);
-		vTaskDelay(pdMS_TO_TICKS(20));
+		HAL_Delay(20);
 		WakePL445();
 //		ThisThread::sleep_for(20ms);
-		vTaskDelay(pdMS_TO_TICKS(20));
+		HAL_Delay(20);
 	}
 
 	// Mask Customer Checksum Fault bit
@@ -302,26 +300,26 @@ void InitPL455() {
 	uint32_t wTemp = 0;
 
 
-	for (int nDev_ID = TOTALBOARDS - 1; nDev_ID >= 0; --nDev_ID) {
-		// read device ID to see if there is a response
-		ReadReg(nDev_ID, DEVICE_ADDR, &wTemp, 1, 0); // 0ms timeout
-//		uartReceive();
+//	for (int nDev_ID = TOTALBOARDS - 1; nDev_ID >= 0; --nDev_ID) {
+//		// read device ID to see if there is a response
+//		ReadReg(nDev_ID, DEVICE_ADDR, &wTemp, 1, 0); // 0ms timeout
+////		uartReceive();
+//
+//		//ovde zajebava treba proveriti
+//		UART_Receive(5, );
+//
+//
+//
+////		ThisThread::sleep_for(50ms);
+//	}
 
-		//ovde zajebava treba proveriti
-		dealokacijaMemorije(UART_BlockReceiveString(5));
-
-
-
-//		ThisThread::sleep_for(50ms);
-	}
-
-	vTaskDelay(pdMS_TO_TICKS(1));
+	HAL_Delay(1);
 
 	// Clear all faults
 	WriteReg(0, FAULT_SUM, 0xFFC0, 2, FRMWRT_ALL_NR); // clear all fault summary flags
 	WriteReg(0, DEVICE_STATUS, 0x38, 1, FRMWRT_ALL_NR); // clear fault flags in the system status register
 
-	vTaskDelay(pdMS_TO_TICKS(10));
+	HAL_Delay(10);
 
 // Configure AFE (section 2.2.1)
 
@@ -355,6 +353,6 @@ void InitPL455() {
 void shutDownSlavesCommand(){
      for(int nDev_ID = 0; nDev_ID < TOTALBOARDS>>1; nDev_ID++) {
         WriteReg(nDev_ID, DEVICE_CONTROL, 0x40, 1, FRMWRT_ALL_NR);  // send out broadcast pwrdown command
-        vTaskDelay(pdMS_TO_TICKS(20));
+        HAL_Delay(20);
     }
 }

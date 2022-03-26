@@ -8,15 +8,7 @@
 
 #include "CANlibrary.h"
 #include "master.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
-#include "semphr.h"
 
-
-TaskHandle_t canHandler;
-QueueHandle_t CAN_Rx_Queue;
-SemaphoreHandle_t CANMutex;
 uint32_t TxMailbox;
 CANMsg *msg;
 

@@ -5,8 +5,6 @@
  *      Author: mihailozar
  */
 #include "PwmIn.h"
-#include "FreeRTOS.h"
-#include "task.h"
 #include "tim.h"
 
 
